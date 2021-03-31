@@ -1,0 +1,13 @@
+# This is an example config, please change it to yours before run.
+# For reference of following specs, go to readme.md
+
+http:
+  listen: "0.0.0.0:80"
+  tls:
+    enable: false
+    listen: "0.0.0.0:443"
+    certificate_chain: "/path/to/your/cert.pem"
+    private_key: "/path/to/your/cert.pem"
+device:
+  name: "/dev/tty.usbmodem14233301"
+  baud: 115200
