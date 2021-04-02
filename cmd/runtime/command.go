@@ -66,6 +66,12 @@ func sendCmd() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "send",
 		Short: "Send one custom text to the grid650 array device",
+		Long: "Send one custom text to the grid650 array device.\n" +
+			"You must use quote if your text contains space(s)\n" +
+			"You can adjust text position with space(s).\n" +
+			"Limitation of the text length is 250 ASCII characters.",
+		Args:    cobra.ExactArgs(1),
+		Example: "./grid650-array-serial send \"i am grid 650\"",
 		Run: func(cmd *cobra.Command, args []string) {
 			rtConfig, err := config.LoadGrid650ArraySerialConfig(flag.ConfigFile)
 			if err != nil {
