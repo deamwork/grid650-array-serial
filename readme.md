@@ -3,9 +3,9 @@
 中文说明请移步：[grid650 Array模块串口通信工具 文档](docs/readme_cn.md)
 
 ## Features & Roadmap
-- [x] Custom text modification
+- [x] Custom text modification (introduced in v1.0.0)
     - [ ] Validation of text input
-- [ ] Time sync
+- [x] Time sync (introduced in v1.0.1)
 - [ ] System performance info sync
 
 ## Configuration

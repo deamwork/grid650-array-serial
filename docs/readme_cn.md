@@ -6,7 +6,7 @@ For english version, please visit：[grid650 array module serial tool readme](..
 
 - [x] 自定义文本
   - [ ] 文本内容验证
-- [ ] 时间同步
+- [x] 时间同步 (v1.0.1 引入)
 - [ ] 系统性能信息同步
 
 ## 配置
