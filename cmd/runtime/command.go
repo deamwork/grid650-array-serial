@@ -21,6 +21,7 @@ func Start() {
 	cmd.AddCommand(cmdutil.VersionCmd())
 	cmd.AddCommand(configCmd())
 	cmd.AddCommand(sendCmd())
+	cmd.AddCommand(timeCmd())
 	// TODO: impl this
 	//cmd.AddCommand(runCmd())
 	cmd.Execute()
@@ -89,6 +90,46 @@ func sendCmd() *cobra.Command {
 
 			// send message
 			if err := conn.TransmitData(args[0]); err != nil {
+				log.BgLogger().Error("core.emitter", zap.Error(err))
+			}
+			log.BgLogger().Info("core.emitter", zap.Bool("send_ok", true))
+		},
+	}
+	return &cmd
+}
+
+func timeCmd() *cobra.Command {
+	cmd := cobra.Command{
+		Use:   "syncTime",
+		Short: "Sync current time to the grid650 array device, only support the RFC3339",
+		Long: "Sync current time to the grid650 array device, if you would like to set a time but not now,\n" +
+			"you can add a time with RFC3339 timestamp supported string at the end of the arguments.\n" +
+			"You can read some examples here: https://tools.ietf.org/html/rfc3339#section-5.8",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			rtConfig, err := config.LoadGrid650ArraySerialConfig(flag.ConfigFile)
+			if err != nil {
+				log.BgLogger().Fatal("core.config.parser", zap.Error(err))
+				log.BgLogger().Error("err", zap.NamedError("dump", err))
+			}
+
+			// override config if flag is set
+			if len(flag.Device) > 0 && flag.Baud > 0 {
+				rtConfig.Device.Name = flag.Device
+				rtConfig.Device.Baud = flag.Baud
+			}
+
+			log.BgLogger().Info("core.emitter", zap.Any("sync_time", args[0]))
+
+			// populate config & connect
+			conn := serial.NewSerial(rtConfig.Device.Name, rtConfig.Device.Baud)
+			if err := conn.Connect(); err != nil {
+				log.BgLogger().Fatal("core.comm", zap.Error(err))
+			}
+			registerCloseHandler(conn)
+
+			// send message
+			if err := conn.ClockSync(args[0]); err != nil {
 				log.BgLogger().Error("core.emitter", zap.Error(err))
 			}
 			log.BgLogger().Info("core.emitter", zap.Bool("send_ok", true))
