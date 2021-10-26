@@ -10,4 +10,5 @@ http:
     private_key: "/path/to/your/cert.pem"
 device:
   name: "/dev/tty.usbmodem14233301"
+  # name: "/dev/tty.gridSignalPort-Port" # example of signal port
   baud: 115200
