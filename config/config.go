@@ -23,13 +23,23 @@ type (
 		Name string `yaml:"name"`
 		Baud int    `yaml:"baud"`
 	}
+
+	Integration struct {
+		Spotify Spotify `yaml:"spotify"`
+	}
+
+	Spotify struct {
+		ClientID     string `yaml:"client_id"`
+		ClientSecret string `yaml:"client_secret"`
+	}
 )
 
 var grid650ArraySerialConfig string
 
 type Grid650ArraySerialConfig struct {
-	HTTP   Listener `yaml:"http"`
-	Device Device   `yaml:"device"`
+	HTTP        Listener    `yaml:"http"`
+	Device      Device      `yaml:"device"`
+	Integration Integration `yaml:"integration"`
 }
 
 func LoadGrid650ArraySerialConfig(file string) (config *Grid650ArraySerialConfig, err error) {

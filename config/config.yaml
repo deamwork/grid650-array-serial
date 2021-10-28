@@ -2,13 +2,17 @@
 # For reference of following specs, go to readme.md
 
 http:
-  listen: "0.0.0.0:80"
+  listen: "0.0.0.0:8008"
   tls:
     enable: false
     listen: "0.0.0.0:443"
     certificate_chain: "/path/to/your/cert.pem"
     private_key: "/path/to/your/cert.pem"
 device:
-  name: "/dev/tty.usbmodem14233301"
-  # name: "/dev/tty.gridSignalPort-Port" # example of signal port
+  name: "/dev/tty.gridSignalPort-Port" # example of signal port
+# name: "/dev/tty.usbmodem14233301"
   baud: 115200
+integration:
+  spotify:
+    client_id: FILL_ME
+    client_secret: FILL_ME

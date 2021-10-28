@@ -1,9 +1,14 @@
 package runtime
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/XSAM/go-hybrid/cmdutil"
 	"github.com/XSAM/go-hybrid/log"
 	"github.com/XSAM/go-hybrid/metadata"
+	"github.com/deamwork/grid650-array-serial/pkg/playback"
+	"github.com/deamwork/grid650-array-serial/pkg/playback/utils"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
@@ -23,7 +28,7 @@ func Start() {
 	cmd.AddCommand(sendCmd())
 	cmd.AddCommand(timeCmd())
 	// TODO: impl this
-	//cmd.AddCommand(runCmd())
+	cmd.AddCommand(runCmd())
 	cmd.Execute()
 }
 
@@ -49,9 +54,9 @@ func rootCmd() *cobra.Command {
 	}
 
 	flag = Flag{
-		HTTPListen: "0.0.0.0:80",
-		ConfigFile: "../config/config.yaml",
-		Device:     "/dev/tty.usbmodem14233301",
+		//HTTPListen: "0.0.0.0:80",
+		//ConfigFile: "../config/config.yaml",
+		//Device:     "/dev/tty.usbmodem14233301",
 		Environment: Environment{
 			DevelopmentMode: false,
 			JSONLogStyle:    false,
@@ -180,19 +185,70 @@ func runCmd() *cobra.Command {
 			}
 			log.BgLogger().Info("core.flag.parser", zap.Any("config", rtConfig))
 
-			if len(flag.HTTPListen) > 0 {
-				var httpServer *httpserver.HTTPServer
-
-				// setup listener
-				httpServer = httpserver.New(flag.HTTPListen)
-				log.BgLogger().Info("core.config.rpc", zap.String("msg", "Using insecure tcp"))
-
-				registerCloseHandler(httpServer)
-
-				// starts http server without blocking main thread.
-				go httpServer.Serve()
-				log.BgLogger().Info("core.config.http", zap.String("msg", "serial-comm server is ready."), zap.String("addr", flag.HTTPListen))
+			if len(flag.HTTPListen) == 0 {
+				flag.HTTPListen = rtConfig.HTTP.Listen
 			}
+
+			var httpServer *httpserver.HTTPServer
+
+			// setup listener
+			httpServer = httpserver.New(flag.HTTPListen)
+			log.BgLogger().Info("core.config.rpc", zap.String("msg", "Using insecure tcp"))
+
+			trackCh := make(chan utils.TrackInfo, 1)
+			s := playback.NewSpotifyClient()
+			go s.Start(rtConfig.Integration.Spotify.ClientID, rtConfig.Integration.Spotify.ClientSecret, httpServer, trackCh)
+
+			registerCloseHandler(httpServer)
+
+			// override config if flag is set
+			if len(flag.Device) > 0 && flag.Baud > 0 {
+				rtConfig.Device.Name = flag.Device
+				rtConfig.Device.Baud = flag.Baud
+			}
+
+			// populate config & connect
+			conn := serial.NewSerial(rtConfig.Device.Name, rtConfig.Device.Baud)
+			if err := conn.Connect(); err != nil {
+				log.BgLogger().Fatal("core.comm", zap.Error(err))
+			}
+
+			registerCloseHandler(conn)
+
+			go func() {
+				var lastSend string
+
+				for {
+					track := <-trackCh
+					var song string
+					if track.Name == "" {
+						// not playing
+						song = fmt.Sprintf("SPOTIFY - STAND BY")
+					} else {
+						// render text
+						song = fmt.Sprintf("%s - %s", track.Artists[0], track.Name)
+					}
+
+					// prevent repeatedly send
+					if lastSend != song {
+						log.BgLogger().Info("spotify.track", zap.Any("track", track))
+						log.BgLogger().Debug("core.emitter", zap.Any("send_text", song))
+						if err := conn.TransmitData(song); err != nil {
+							log.BgLogger().Error("core.emitter", zap.Error(err))
+						}
+						log.BgLogger().Debug("core.emitter", zap.Bool("send_ok", true))
+
+						// save last sent result
+						lastSend = song
+					}
+
+					time.Sleep(time.Second)
+				}
+			}()
+
+			go httpServer.Serve()
+			log.BgLogger().Info("core.config.http", zap.String("msg", "serial-comm server is ready."), zap.String("addr", flag.HTTPListen))
+			// starts http server without blocking main thread.
 
 			handleSysSignal()
 		},

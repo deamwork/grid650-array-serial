@@ -29,9 +29,17 @@ func New(listenAddress string) *HTTPServer {
 }
 
 // RegisterRoute append a router to underlying http server mux.
-func (s *HTTPServer) RegisterRoute(method string, pattern string, handler http.Handler) *HTTPServer {
+func (s *HTTPServer) RegisterRouteHandler(method string, pattern string, handler http.Handler) *HTTPServer {
 	s.mu.Lock()
 	s.router.Handle(pattern, handler).Methods(method)
+	s.mu.Unlock()
+	return s
+}
+
+// RegisterRoute append a router to underlying http server mux.
+func (s *HTTPServer) RegisterRouteHandlerFunc(method string, pattern string, handlerFunc http.HandlerFunc) *HTTPServer {
+	s.mu.Lock()
+	s.router.HandleFunc(pattern, handlerFunc).Methods(method)
 	s.mu.Unlock()
 	return s
 }

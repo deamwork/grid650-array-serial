@@ -1,7 +1,10 @@
 package httpserver
 
-import "github.com/gorilla/mux"
+import (
+	"net/http"
+)
 
 type Router interface {
-	Register(router *mux.Router)
+	RegisterRouteHandler(method string, pattern string, handler http.Handler) *HTTPServer
+	RegisterRouteHandlerFunc(method string, pattern string, handlerFunc http.HandlerFunc) *HTTPServer
 }
